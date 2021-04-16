@@ -13,6 +13,16 @@ Form
 		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");				    suggestedColumns: ["scale"];	allowedColumns: ["scale"]}
 	}
 
+	DropDown
+	{
+		name: "distFam"
+		indexDefaultValue: 1
+		label: qsTr("Distribution family")
+		values: [ 'Gaussian', 'Logit','Poisson','Student']
+	}
+
+	DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 1000}
+
 
 
 
@@ -127,12 +137,65 @@ Form
 			Layout.columnSpan: 2
 
 			columns: 2
+			DoubleField { name:'DynRegLags';		label: "Lag of coefficients";	fieldWidth: 40;}
 		}
+
 	}
 	Section
-
 	{
+
 		title: qsTr('Plots')
+
+		Group
+		{
+			title: qsTr('State Plots')
+
+			CheckBox
+			{
+				name: 'checkboxPlotAggregatedStates'
+				label: qsTr('Aggregated state contribution')
+
+				DropDown
+				{
+					name: "scaleAggregatedStates"
+					indexDefaultValue: 2
+					label: qsTr("Scale")
+					values: [ 'linear', 'mean']
+				}
+
+
+
+			}
+
+			CheckBox
+			{
+				name: 'checkboxPlotComponentStates'
+				label: qsTr('Component state contribution')
+			}
+		}
+
+		Group
+		{
+			title: qsTr('Coefficients')
+
+			CheckBox
+			{
+				name: 'checkboxPlotIncProb'
+				label: qsTr('Inclusion probability plot')
+			}
+			CheckBox
+			{
+				name: 'checkboxPlotDynReg'
+				label: qsTr('Dynamic regression plot')
+			}
+		}
+		Group
+		{
+			title: qsTr('Resiudals')
+			CheckBox {name:'checkBoxResidual'; label: qsTr('Post. dist. of residuals')}
+			CheckBox {name:'checkBoxForecast'; label: qsTr('Post. dist. of one-step-ahead prediction')}
+			CheckBox {name:'checkBoxForecastError'; label: qsTr('Error of one-step-ahead prediction')}
+		}
 
 	}
 	Section
