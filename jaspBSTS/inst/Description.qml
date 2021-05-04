@@ -12,10 +12,11 @@ Description
 	maintainer	: "JASP Team <info@jasp-stats.org>"
 	website		: "https://jasp-stats.org"
 	license		: "GPL (>= 2)"
-	
+
 	Analysis
 	{
 	    title: "Bayesian State Space Models"
-	    func:   "BayesianStateSpace"
+	    func: "bayesianStateSpace"
+		qml: 'bayesianStateSpace.qml'
 	}
 }
