@@ -35,17 +35,13 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   .bstsComputeResults(jaspResults, dataset, options,ready)
 
   # Output containers, tables, and plots based on the results. These functions should not return anything!
-  # "Test"
-  #.bstsSimplePlot(jaspResults,options)
-
   .bstsCreateContainerMain(jaspResults,options,ready)
   .bstsCreateModelSummaryTable(jaspResults,options,ready)
   .bstsCreateStatePlots(jaspResults,options,ready)
 
-  #.mockContainerMain( jaspResults, options, mockResults)
-  #.mockTableSomething(jaspResults, options, mockResults)
-  #.mockTableSthElse(  jaspResults, options, mockResults)
-  #.mockPlotSomething( jaspResults, options, mockResults)
+  # Only to test certain plot things without having to put them in another container
+
+  #.bstsSimplePlot(jaspResults,options)
 
   return()
 }
@@ -195,10 +191,10 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsTable <- createJaspTable(title = gettext("Model Summary"))
   bstsTable$position <- 1
 
-  bstsTable$addColumnInfo(name="resSd",title=gettext("Residual SD"),type= "number")
-  bstsTable$addColumnInfo(name="predSd",title=gettext("Prediction SD"),type= "number")
-  bstsTable$addColumnInfo(name="R2",title=gettext("R^2"),type= "number") # need proper R^2 notation
-  bstsTable$addColumnInfo(name="relGof",title=gettext("Harvey's goodness of fit"),type= "number")
+  bstsTable$addColumnInfo(name="resSd",   title=gettext("Residual SD"),               type= "number")
+  bstsTable$addColumnInfo(name="predSd",  title=gettext("Prediction SD"),             type= "number")
+  bstsTable$addColumnInfo(name="R2",      title =gettextf("R%s", "\u00B2"),           type= "number")
+  bstsTable$addColumnInfo(name="relGof",  title=gettext("Harvey's goodness of fit"),  type= "number")
 
 
   .bstsModelSummaryTableFill(bstsTable,bstsResults,ready)
