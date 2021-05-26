@@ -8,9 +8,12 @@ Form
 
 	VariablesForm
 	{
+
 		AvailableVariablesList	{ name: "allVariablesList" }
-		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");		suggestedColumns: ["scale"];	singleVariable: true	}
-		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");				    suggestedColumns: ["scale"];	allowedColumns: ["scale"]}
+		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");	suggestedColumns: ["scale"];	singleVariable: true		}
+		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");			suggestedColumns: ["scale"];	allowedColumns: ["scale"]	}
+		AssignedVariablesList 	{ name: "factors";		title: qsTr("Factors");				allowedColumns: ["ordinal", "nominal", "nominalText"]		}
+		AssignedVariablesList	{ name: "time";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
 	}
 
 	columns: 2
@@ -56,9 +59,22 @@ Form
 
 	Section
 	{
+
 		title: qsTr("Model Components")
 
 		//columns: 2
+		VariablesForm
+		{
+			preferredHeight: jaspTheme.smallDefaultVariablesFormHeight
+			AvailableVariablesList
+			{
+				name: "availableTerm"
+				title: qsTr("Components")
+				width: parent.width / 4
+				source: ['covariates', 'factors']
+			}
+			ModelTermsList {name: "modelTerms";width: parent.width * 5 / 9}
+		}
 		CheckBox
 		{
 			name: "checkboxAr"
@@ -90,7 +106,7 @@ Form
 			}
 			RadioButton
 			{
-				value: "autoAR"; label: qsTr("Automatic"); checked: true
+				value: "autoAR"; label: qsTr("Automatic")
 				columns: 1
 				DoubleField { name: "maxNoLags";	label: qsTr("Maximal lags");	fieldWidth: 40; defaultValue: 1;}
 			}
