@@ -10,7 +10,7 @@ Form
 	{
 
 		AvailableVariablesList	{ name: "allVariablesList" }
-		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");	suggestedColumns: ["scale"];	singleVariable: true		}
+		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");	suggestedColumns: ["scale"];	singleVariable: true}
 		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");			suggestedColumns: ["scale"];	allowedColumns: ["scale"]	}
 		AssignedVariablesList 	{ name: "factors";		title: qsTr("Factors");				allowedColumns: ["ordinal", "nominal", "nominalText"]		}
 		AssignedVariablesList	{ name: "time";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
@@ -18,44 +18,19 @@ Form
 
 	columns: 2
 
-	DropDown
+	Group
 	{
-		name: "distFam"
-		indexDefaultValue: 1
-		label: qsTr("Distribution family")
-		values: [ 'Gaussian', 'Logit','Poisson','Student']
-	}
-
-	DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 1000}
-
-	RadioButtonGroup
-	{
-		name: "burnSpecification"
-		title: qsTr("Burn-in Specification")
-		radioButtonsOnSameRow: TRUE
-		RadioButton
+		title: qsTr("Output")
+		columns: 1
+		CheckBox{ name: "postSummaryTable"; label: qsTr("Posterior summary of coefficients"); id: postSummaryTable }
+		CIField
 		{
-			value: "burnSuggested"; label: qsTr("Automatic suggestion")
-			DoubleField { name:'propBurnSuggested'
-										label: "Proportion"
-										fieldWidth: 60
-									 	defaultValue: 0.1
-										min:0
-										max: 0.999
-									 	}
+			name: "posteriorSummaryCoefCredibleIntervalValue"
+			label: qsTr("Credible interval")
+			enabled: postSummaryTable.checked
 		}
-		RadioButton
-		{
-			value: "burnManual"; label: qsTr("Manual")
-			DoubleField { name:'numberBurnManual'
-										label: qsTr("Number")
-										fieldWidth: 60
-										defaultValue: 0
 
-									 	}
-		}
 	}
-
 
 	Section
 	{
@@ -186,9 +161,11 @@ Form
 		DoubleField { name:'DynRegLags';		label: "Lag of coefficients";	fieldWidth: 40;}
 	}
 
-}
-Section
-{
+	}
+
+
+	Section
+	{
 
 	title: qsTr('Plots')
 
@@ -204,7 +181,6 @@ Section
 			DropDown
 			{
 				name: "scaleAggregatedStates"
-				indexDefaultValue: 2
 				label: qsTr("Scale")
 				values: [ 'linear', 'mean']
 			}
@@ -254,9 +230,55 @@ Section
 		CheckBox {name:'checkBoxForecastError'; label: qsTr('Error of one-step-ahead prediction')}
 	}
 
-}
-Section
-{
-	title: qsTr('Prediction')
-}
+	}
+
+	//Section
+	//{
+	//	title: qsTr("Priors")
+	//}
+	Section
+
+	{
+
+		title: qsTr('Advanced Options')
+
+		DropDown
+		{
+			name: "distFam"
+			indexDefaultValue: 1
+			label: qsTr("Distribution family")
+			values: [ 'Gaussian', 'Logit','Poisson','Student']
+		}
+
+		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 1000}
+
+		RadioButtonGroup
+		{
+			name: "burnSpecification"
+			title: qsTr("Burn-in Specification")
+			radioButtonsOnSameRow: TRUE
+			RadioButton
+			{
+				value: "burnSuggested"; label: qsTr("Automatic suggestion")
+				DoubleField { name:'propBurnSuggested'
+											label: "Proportion"
+											fieldWidth: 60
+										 	defaultValue: 0.1
+											min:0
+											max: 0.999
+										 	}
+			}
+			RadioButton
+			{
+				value: "burnManual"; label: qsTr("Manual")
+				DoubleField { name:'numberBurnManual'
+											label: qsTr("Number")
+											fieldWidth: 60
+											defaultValue: 0
+
+										 	}
+			}
+		}
+
+	}
 }

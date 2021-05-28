@@ -40,6 +40,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   # Output containers, tables, and plots based on the results. These functions should not return anything!
   .bstsCreateContainerMain(jaspResults,options,ready)
   .bstsCreateModelSummaryTable(jaspResults,options,ready)
+  .bstsCreateCoefficientTable(jaspResults,options,ready)
   .bstsCreateStatePlots(jaspResults,options,ready)
 
   # Only to test certain plot things without having to put them in another container
@@ -62,8 +63,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   if(!ready) return()
   numericVariables  <- c(options$dependent,unlist(options$covariates))
   numericVariables  <- numericVariables[numericVariables != ""]
-  nominalVars       <- c(options$time,unlist(options$factors))
-  dataset <- .readDataSetToEnd(columns.as.numeric  = numericVariables, columns.as.factors = nominalVars)
+  nominalVars       <- unlist(options$factors)
+  dataset <- .readDataSetToEnd(columns.as.numeric  = numericVariables, columns.as.factor = nominalVars)
 
   return(dataset)
 
@@ -87,6 +88,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 .bstsModelDependencies <- function(options) {
   return(c("dependent",
             "covariates",
+            "postSummaryTable",
+            "posteriorSummaryCoefCredibleIntervalValue",
             "distFam",
             "mcmcDraws",
             "modelTerms",
@@ -124,17 +127,20 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
   y     <- dataset[[encodeColNames(options$dependent)]]
   data <- data.frame(y=y)
+  #covs <- unlist(options$covariates,options$factors)
 
-  covs <- unlist(options$covariates)
-
-  for(cov in covs) {
-    data[[cov]] <- dataset[[encodeColNames(cov)]]
-  }
+  #for(cov in covs) {
+  #  data[[cov]] <- dataset[[encodeColNames(cov)]]
+  #}
 
   predictors = NULL
-  if (length(options$covariates)>0)
+  if (length(options$covariates)>0|length(options$factors) >0)
     predictors <- .bstsGetPredictors(options$modelTerms)
   formula = .bstsGetFormula(dependent=y,predictors = predictors)
+
+  for(predictor in predictors){
+    data[[predictor]] <- dataset[[encodeColNames(predictor)]]
+  }
 
 
   if(!is.numeric(y))
@@ -164,7 +170,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
   model <- bsts::bsts(formula = formula,
-                data=data,
+                data=dataset,
                 state.specification = ss,
                 niter = 500,
                 timestamps=NULL,
@@ -261,7 +267,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
   bstsResults <- jaspResults[["stateBstsResults"]]$object
 
-  bstsTable <- createJaspTable(title = gettext("Model Summary2"))
+  bstsTable <- createJaspTable(title = gettext("Model Summary"))
   bstsTable$position <- 1
 
   bstsTable$addColumnInfo(name="resSd",   title=gettext("Residual SD"),               type= "number")
@@ -270,7 +276,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsTable$addColumnInfo(name="relGof",  title=gettext("Harvey's goodness of fit"),  type= "number")
 
 
-  .bstsModelSummaryTableFill(bstsTable,bstsResults,ready)
+  .bstsFillModelSummaryTable(bstsTable,bstsResults,ready)
 
   jaspResults[["bstsMainContainer"]][["bstsModelSummaryTable"]] <- bstsTable
 
@@ -278,7 +284,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 }
 
 
-.bstsModelSummaryTableFill <- function(bstsTable,bstsResults,ready) {
+.bstsFillModelSummaryTable <- function(bstsTable,bstsResults,ready) {
   if(!ready) return()
 
   res <- summary(bstsResults)
@@ -290,6 +296,72 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
     relGof  = res$relative.gof
 
   ))
+
+}
+
+# table for regression coefficients"
+.bstsCreateCoefficientTable <- function(jaspResults,options,ready){
+  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0) return()
+
+  bstsResults <- jaspResults[["stateBstsResults"]]$object
+  bstsCoefficientTable <- createJaspTable(title = gettext("Posterior Summary of Coefficients"))
+  bstsCoefficientTable$position <- 2
+
+  #overtitle <- gettextf("%s%% Credible Interval", format(100*options[["posteriorSummaryCoefCredibleIntervalValue"]], digits = 3))
+  bstsCoefficientTable$addColumnInfo(name = "coef", title = gettext("Coefficients"), type = "string")
+  bstsCoefficientTable$addColumnInfo(name = "priorIncP", title = gettext("P(incl)"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "postIncP", title = gettext("P(incl|data)"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "BFinc", title = gettext("BF<sub>inclusion</sub>"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = 'mean', title = gettext("Mean"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "sd", title = gettext("SD"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = 'meanInc', title = gettext("Mean<sub>inclusion</sub>"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "sdInc", title = gettext("SD<sub>inclusion</sub>"), type = "number")
+  #bstsCoefficientTable$addColumnInfo(name = "lowerCri",    title = gettext("Lower"),         type = "number", overtitle = overtitle)
+  #bstsCoefficientTable$addColumnInfo(name = "upperCri",    title = gettext("Upper"),         type = "number", overtitle = overtitle)
+
+  .bstsFillCoefficientTable(bstsResults,bstsCoefficientTable,options,ready)
+
+  jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]] <- bstsCoefficientTable
+
+}
+
+.bstsFillCoefficientTable <- function(bstsResults,bstsCoefficientTable,options,ready) {
+  res <- as.data.frame(summary(bstsResults,order = F)$coefficients)
+  res$priorInc <- bstsResults$prior$prior.inclusion.probabilities
+  res$BFinc <- res$inc.prob/(1-res$inc.prob)
+
+
+  # TODO: figure out how to get CI for factor variables
+  #condQuantile <- function(beta,ci){
+  #  beta <- beta[beta != 0]
+  #  if (length(beta)>0)
+  #    return(quantile(beta,ci))
+  #  return(0)
+  #}
+  #ci <- options$posteriorSummaryCoefCredibleIntervalValue
+  #res$lo_ci <- apply(bstsResults$coefficients, 2,condQuantile,((1- ci)/2))
+  #res$hi_ci <- apply(bstsResults$coefficients, 2,condQuantile,1-((1- ci)/2))
+  res <- res[order(res$inc.prob,decreasing = T),]
+
+
+  for (i in 1:nrow(res)) {
+    row <- list(
+      coef = rownames(res[i,]),
+      priorIncP = res$priorInc[i],
+      postIncP = res$inc.prob[i],
+      BFinc = res$BFinc[i],
+      mean = res$mean[i],
+      sd = res$sd[i],
+      meanInc = res$mean.inc[i],
+      sdInc = res$sd.inc[i]
+      #lowerCri = res$lo_ci[i],
+      #upperCri = res$lo_ci[i]
+    )
+
+      bstsCoefficientTable$addRows(row)
+
+    }
+
 
 }
 
@@ -308,6 +380,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsResults <- jaspResults[["stateBstsResults"]]$object
 
   if(options$checkboxPlotAggregatedStates) .bstsAggregatedStatePlot(bstsStatePlots,bstsResults,options,ready)
+  if(options$checkboxPlotComponentStates)
+    .bstsComponentStatePlot(bstsStatePlots,bstsResults,options,ready)
 
 
   jaspResults[["bstsMainContainer"]][["bstsStatePlots"]] <- bstsStatePlots
@@ -360,7 +434,35 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
 
+.bstsComponentStatePlot <- function(bstsStatePlots,bstsResults,options,ready){
 
+  bstsComponentStatePlot <- createJaspPlot(title= gettext("Component States"))
+
+  means <- apply(bstsResults$state.contribution, 2, colMeans)
+
+  ymin <- apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.025))
+  ymax <- apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.975))
+
+  ymin <- reshape2::melt(ymin)
+  ymax <- reshape2::melt(ymax)
+  means2 <- reshape2::melt(means)
+
+  p <-  ggplot2::ggplot(data=means2, ggplot2::aes(x=mcmc.iteration, y=value)) +
+        ggplot2::geom_line() +
+        ggplot2::geom_ribbon(ggplot2::aes(ymin=ymin$value,ymax=ymax$value),
+        fill ="blue",alpha=0.5) +
+        ggplot2::theme_bw() + ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::ylab("") + ggplot2::xlab("") +
+        ggplot2::facet_grid(component ~ ., scales="free") +
+        ggplot2::guides(colour=FALSE) +
+        ggplot2::theme(axis.text.x=ggplot2::element_text(angle = -90, hjust = 0))
+
+
+  bstsComponentStatePlot$plotObject <- p
+
+  bstsStatePlots[["bstsComponentStatePlot"]] <- bstsComponentStatePlot
+
+  return()
+}
 
 
 
