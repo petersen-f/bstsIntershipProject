@@ -93,6 +93,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
             "distFam",
             "mcmcDraws",
             "modelTerms",
+            "seasonalities",
             "checkboxAr","lagSelectionMethod","noLags","maxNoLags","arSdPrior","arSigmaGuess","arSigmaWeight",
             "checkboxLocalLevel",'localLevelSdPrior','localLevelSigmaGuess','localLevelSigmaWeight',
             "checkboxLocalLinearTrend",'lltLevelPrior','lltLevelSigmaGuess','lltLevelSigmaWeight','lltSlopePrior',
@@ -167,8 +168,28 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
     ss <- bsts::AddLocalLinearTrend(ss,y=y)
 
 
+  if (!is.null(options$seasonalities)) {
+
+    for (seas in options$seasonalities) {
+
+      sigma.prior <- if(seas$sigma.guess=="") NULL else{Boom::SdPrior(as.numeric(seas$sigma.guess),seas$sample.size)}
+      normal.prior <- if(seas$sigma=="") NULL else Boom::NormalPrior(seas$mu,as.numeric(seas$sigma))
+      ss <- bsts::AddSeasonal(ss,
+                        y = y,
+                        nseasons = seas$nSeason,
+                        season.duration = seas$seasonDuration,
+                        sigma.prior = sigma.prior,
+                       initial.state.prior = normal.prior
+                      )
+  #      #if(!seas$name == "")
+  #      #  ss[[length(ss)]]$name <- seas$name
+
+     }
+  }
 
 
+
+  #ss <- bsts::AddSeasonal(ss, y=y, nseasons = 12)
   model <- bsts::bsts(formula = formula,
                 data=dataset,
                 state.specification = ss,
