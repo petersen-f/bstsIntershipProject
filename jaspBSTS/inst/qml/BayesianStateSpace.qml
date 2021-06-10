@@ -13,7 +13,7 @@ Form
 		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");	suggestedColumns: ["scale"];	singleVariable: true}
 		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");			suggestedColumns: ["scale"];	allowedColumns: ["scale"]	}
 		AssignedVariablesList 	{ name: "factors";		title: qsTr("Factors");				allowedColumns: ["ordinal", "nominal", "nominalText"]		}
-		AssignedVariablesList	{ name: "time";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
+		//AssignedVariablesList	{ name: "time";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
 	}
 
 	columns: 2
@@ -30,6 +30,15 @@ Form
 			enabled: postSummaryTable.checked
 		}
 
+	}
+	Group
+	{
+		DoubleField
+		{
+			name: "expectedModelSize"
+			label: "Expected predictors"
+			defaultValue: 1
+		}
 	}
 
 	Section
@@ -53,7 +62,7 @@ Form
 		CheckBox
 		{
 			name: "checkboxAr"
-			label: qsTr("Add Autoregressive Process")
+			label: qsTr("Add autoregressive component")
 			checked: false
 			id: checkAr
 			Layout.columnSpan: 2
@@ -65,7 +74,7 @@ Form
 				columns: 1
 				enabled: checkAr.checked
 				name: "lagSelectionMethod"
-				title: qsTr("Lag Selection Method")
+				title: qsTr("Lag selection method")
 				radioButtonsOnSameRow: TRUE
 				RadioButton
 				{
@@ -87,62 +96,62 @@ Form
 				}
 			}
 
-			CheckBox
-			{
-				name: 'arSdPrior'
-				enabled: checkAr.checked
-				label: qsTr(' Custom Stand. Dev. Prior') //not sure about the name as it is actually an 	inverse Gamma prior
+			//CheckBox
+			//{
+			//	name: 'arSdPrior'
+			//	enabled: checkAr.checked
+			//	label: qsTr(' Custom Stand. Dev. Prior') //not sure about the name as it is actually an 	inverse Gamma prior
 
-				DoubleField { name:'arSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
-				DoubleField { name:'arSigmaWeight';		label: "Weight";	fieldWidth: 40;}
-			}
+			//	DoubleField { name:'arSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
+			//	DoubleField { name:'arSigmaWeight';		label: "Weight";	fieldWidth: 40;}
+			//}
 		}
 
 		CheckBox
 		{
 			name: "checkboxLocalLevel"
-			label: qsTr("Add Local Level Component")
+			label: qsTr("Add local level component")
 			id: checkLocalLevel
 			checked: false
 			Layout.columnSpan: 2
-			CheckBox
-			{
-				name: 'localLevelSdPrior'
-				enabled: checkLocalLevel.checked
-				label: qsTr(' Custom random walk SD prior') //not sure about the name as it is actually an 	inverse Gamma prior
+			//CheckBox
+			//{
+			//	name: 'localLevelSdPrior'
+			//	enabled: checkLocalLevel.checked
+			//	label: qsTr(' Custom random walk SD prior') //not sure about the name as it is actually an 	inverse Gamma prior
 
-				DoubleField { name:'localLevelSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
-				DoubleField { name:'localLevelSigmaWeight';		label: "Weight";	fieldWidth: 40;}
-			}
+			//	DoubleField { name:'localLevelSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
+			//	DoubleField { name:'localLevelSigmaWeight';		label: "Weight";	fieldWidth: 40;}
+			//}
 		}
 		//Local Linear Trend
 		// abbreviated as Llt for priors
 		CheckBox
 		{
 			name: "checkboxLocalLinearTrend"
-			label: qsTr("Add Local Linear Trend Component")
+			label: qsTr("Add local linear trend component")
 			id: checkLocalLinearTrend
 			checked: false
 			columns: 2
 			//Layout.columnSpan: 2
-			CheckBox
-			{
-				name: 'lltLevelPrior'
-				enabled: checkLocalLinearTrend.checked
-				label: qsTr(' Custom level SD prior')
+			//CheckBox
+			//{
+			//	name: 'lltLevelPrior'
+			//	enabled: checkLocalLinearTrend.checked
+			//	label: qsTr(' Custom level SD prior')
 
-				DoubleField { name:'lltLevelSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
-				DoubleField { name:'lltLevelSigmaWeight';		label: "Weight";	fieldWidth: 40;}
-			}
-			CheckBox
-			{
-				name: 'lltSlopePrior'
-				enabled: checkLocalLinearTrend.checked
-				label: qsTr(' Custom slope SD prior')
+			//	DoubleField { name:'lltLevelSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
+			//	DoubleField { name:'lltLevelSigmaWeight';		label: "Weight";	fieldWidth: 40;}
+			//}
+			//CheckBox
+			//{
+			//	name: 'lltSlopePrior'
+			//	enabled: checkLocalLinearTrend.checked
+			//	label: qsTr(' Custom slope SD prior')
 
-				DoubleField { name:'lltSlopeSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
-				DoubleField { name:'lltSlopeSigmaWeight';		label: "Weight";	fieldWidth: 40;}
-			}
+			//	DoubleField { name:'lltSlopeSigmaGuess';		label: "σ guess";	fieldWidth: 40;}
+			//	DoubleField { name:'lltSlopeSigmaWeight';		label: "Weight";	fieldWidth: 40;}
+			//}
 		}
 		//Dynamic Regression Component
 		CheckBox
@@ -170,8 +179,8 @@ Form
 					Label { text: qsTr("Name"); Layout.preferredWidth: 80 * preferencesModel.uiScale							}
 					Label { text: qsTr("Number"); Layout.preferredWidth: 45 * preferencesModel.uiScale				}
 					Label { text: qsTr("Duration"); Layout.preferredWidth: 45 * preferencesModel.uiScale				}
-					Label { text: qsTr("Inverse Gamma Prior σ² \n      σ²     sample size"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
-					Label { text: qsTr("Normal Prior initial state  \n      μ           σ²"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
+					Label { text: qsTr("Inverse gamma prior σ² \n      σ²     sample size"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
+					Label { text: qsTr("Normal prior initial state  \n      μ           σ²"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
 				}
 
 				ComponentsList
@@ -262,79 +271,96 @@ Form
 	Section
 	{
 
-	title: qsTr('Plots')
+		title: qsTr('Plots')
 
-	Group
-	{
-		title: qsTr('State Plots')
-
-		CheckBox
+		Group
 		{
-			name: 'checkboxPlotAggregatedStates'
-			label: qsTr('Aggregated state contribution')
+			title: qsTr('State Plots')
 
-			DropDown
-			{
-				name: "scaleAggregatedStates"
-				label: qsTr("Scale")
-				values: [ 'linear', 'mean']
-			}
-
-			CIField
-			{
-				name: 'ciAggregatedStates'
-				label: qsTr('Credible interval')
-			}
 			CheckBox
 			{
-				name: "actualValuesAggregatedStates"
-				label: qsTr("Show observations")
+				name: 'checkboxPlotAggregatedStates'
+				label: qsTr('Aggregated state contribution')
+
+				//DropDown
+				//{
+				//	name: "scaleAggregatedStates"
+				//	label: qsTr("Scale")
+				//	values: [ 'linear', 'mean']
+				//}
+
+				CIField
+				{
+					name: 'ciAggregatedStates'
+					label: qsTr('Credible interval')
+				}
+				CheckBox
+				{
+					name: "actualValuesAggregatedStates"
+					label: qsTr("Show observations")
+				}
+
+
 			}
 
+			CheckBox
+			{
+				name: 'checkboxPlotComponentStates'
+				label: qsTr('Component state contribution')
 
+			}
 		}
 
-		CheckBox
+		//Group
+		//{
+		//	title: qsTr('Coefficients')
+
+		//	CheckBox
+		//	{
+		//		name: 'checkboxPlotIncProb'
+		//		label: qsTr('Inclusion probability plot')
+		//	}
+		//	CheckBox
+		//	{
+		//		name: 'checkboxPlotDynReg'
+		//		label: qsTr('Dynamic regression plot')
+		//	}
+		//}
+		Group
 		{
-			name: 'checkboxPlotComponentStates'
-			label: qsTr('Component state contribution')
-
+			title: qsTr('Residuals')
+			CheckBox {name:'checkBoxResidual'; label: qsTr('Posterior distribution of residuals')}
+			CheckBox {name:'checkBoxForecast'; label: qsTr('Posterior distribution of one-step-ahead prediction')}
+			CheckBox {name:'checkBoxForecastError'; label: qsTr('Error of one-step-ahead prediction')}
 		}
-	}
 
-	Group
-	{
-		title: qsTr('Coefficients')
-
-		CheckBox
+		Group
 		{
-			name: 'checkboxPlotIncProb'
-			label: qsTr('Inclusion probability plot')
+			title: qsTr("Antecast")
+			CheckBox {name:'checkBoxPrediction'; label: qsTr('Antecast plot')}
 		}
-		CheckBox
-		{
-			name: 'checkboxPlotDynReg'
-			label: qsTr('Dynamic regression plot')
-		}
-	}
-	Group
-	{
-		title: qsTr('Resiudals')
-		CheckBox {name:'checkBoxResidual'; label: qsTr('Post. dist. of residuals')}
-		CheckBox {name:'checkBoxForecast'; label: qsTr('Post. dist. of one-step-ahead prediction')}
-		CheckBox {name:'checkBoxForecastError'; label: qsTr('Error of one-step-ahead prediction')}
-	}
 
 	}
+
+	//Section
+	//{
+	//	title: qsTr("Priors")
+
+	//	VariablesList
+	//	{
+	//		name: "ManualPriors"
+	//		source: [ { rSource: "myRSource" } ]
+	//	}
+	//}
 
 	Section
 	{
-		title: qsTr("Priors")
+		title: qsTr("Antecast")
 
-		VariablesList
+		DoubleField
 		{
-			name: "ManualPriors"
-			source: [ { rSource: "myRSource" } ]
+			name: "predictionHorizon"
+			label: qsTr("Horizon")
 		}
 	}
 	Section
@@ -343,15 +369,15 @@ Form
 
 		title: qsTr('Advanced Options')
 
-		DropDown
-		{
-			name: "distFam"
-			indexDefaultValue: 1
-			label: qsTr("Distribution family")
-			values: [ 'Gaussian', 'Logit','Poisson','Student']
-		}
+		//DropDown
+		//{
+		//	name: "distFam"
+		//	indexDefaultValue: 1
+		//	label: qsTr("Distribution family")
+		//	values: [ 'Gaussian', 'Logit','Poisson','Student']
+		//}
 
-		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 1000}
+		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 500}
 
 		RadioButtonGroup
 		{
