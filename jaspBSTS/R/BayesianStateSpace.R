@@ -356,14 +356,14 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 # table for regression coefficients"
 .bstsCreateCoefficientTable <- function(jaspResults,options,ready){
-  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0) return()
+  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0 | !ready) return()
 
   #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
   bstsCoefficientTable <- createJaspTable(title = gettext("Posterior Summary of Coefficients"))
   bstsCoefficientTable$position <- 2
 
-  #overtitle <- gettextf("%s%% Credible Interval", format(100*options[["posteriorSummaryCoefCredibleIntervalValue"]], digits = 3))
+  overtitle <- gettextf("%s%% Credible Interval", format(100*options[["posteriorSummaryCoefCredibleIntervalValue"]], digits = 3))
   bstsCoefficientTable$addColumnInfo(name = "coef", title = gettext("Coefficients"), type = "string")
   bstsCoefficientTable$addColumnInfo(name = "priorIncP", title = gettext("P(incl)"), type = "number")
   bstsCoefficientTable$addColumnInfo(name = "postIncP", title = gettext("P(incl|data)"), type = "number")
@@ -372,8 +372,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsCoefficientTable$addColumnInfo(name = "sd", title = gettext("SD"), type = "number")
   bstsCoefficientTable$addColumnInfo(name = 'meanInc', title = gettext("Mean<sub>inclusion</sub>"), type = "number")
   bstsCoefficientTable$addColumnInfo(name = "sdInc", title = gettext("SD<sub>inclusion</sub>"), type = "number")
-  #bstsCoefficientTable$addColumnInfo(name = "lowerCri",    title = gettext("Lower"),         type = "number", overtitle = overtitle)
-  #bstsCoefficientTable$addColumnInfo(name = "upperCri",    title = gettext("Upper"),         type = "number", overtitle = overtitle)
+  bstsCoefficientTable$addColumnInfo(name = "lowerCri",    title = gettext("Lower"),         type = "number", overtitle = overtitle)
+  bstsCoefficientTable$addColumnInfo(name = "upperCri",    title = gettext("Upper"),         type = "number", overtitle = overtitle)
 
   .bstsFillCoefficientTable(bstsResults,bstsCoefficientTable,options,ready)
 
@@ -388,15 +388,15 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
   # TODO: figure out how to get CI for factor variables
-  #condQuantile <- function(beta,ci){
-  #  beta <- beta[beta != 0]
-  #  if (length(beta)>0)
-  #    return(quantile(beta,ci))
-  #  return(0)
-  #}
-  #ci <- options$posteriorSummaryCoefCredibleIntervalValue
-  #res$lo_ci <- apply(bstsResults$coefficients, 2,condQuantile,((1- ci)/2))
-  #res$hi_ci <- apply(bstsResults$coefficients, 2,condQuantile,1-((1- ci)/2))
+  condQuantile <- function(beta,ci){
+    beta <- beta[beta != 0]
+    if (length(beta)>0)
+      return(quantile(beta,ci))
+    return(0)
+  }
+  ci <- options$posteriorSummaryCoefCredibleIntervalValue
+  res$lo_ci <- apply(bstsResults$coefficients, 2,condQuantile,((1- ci)/2))
+  res$hi_ci <- apply(bstsResults$coefficients, 2,condQuantile,1-((1- ci)/2))
   res <- res[order(res$inc.prob,decreasing = T),]
 
 
@@ -410,8 +410,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
       sd = res$sd[i],
       meanInc = res$mean.inc[i],
       sdInc = res$sd.inc[i]
-      #lowerCri = res$lo_ci[i],
-      #upperCri = res$lo_ci[i]
+      ,lowerCri = res$lo_ci[i],
+      upperCri = res$hi_ci[i]
     )
 
       bstsCoefficientTable$addRows(row)

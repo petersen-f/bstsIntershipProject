@@ -336,8 +336,8 @@ Form
 
 		Group
 		{
-			title: qsTr("Antecast")
-			CheckBox {name:'checkBoxPrediction'; label: qsTr('Antecast plot')}
+			title: qsTr("Prediction")
+			CheckBox {name:'checkBoxPrediction'; label: qsTr('Prediction plot')}
 		}
 
 	}
@@ -355,7 +355,7 @@ Form
 
 	Section
 	{
-		title: qsTr("Antecast")
+		title: qsTr("Prediction")
 
 		DoubleField
 		{
