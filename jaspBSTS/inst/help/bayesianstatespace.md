@@ -12,7 +12,6 @@ The Bayesian State Space Model decomposes the hidden state of a time series into
 
 ### Input
 ---
-
 #### Assignment Box
 - Dependent Variable: Response variable to be estimated (needed)
 - Covariates: Numerical predictor variables (optional)
@@ -30,8 +29,8 @@ The Bayesian State Space Model decomposes the hidden state of a time series into
   - Model terms: The independent variables in the model. By default, all the main effects of the specified independent variables are included in the model. To include interactions, click multiple variables (e.g., by holding the ctrl/cmd button on your keyboard while clicking) and drag those into the `Model Terms` box. Ticking the boxes on the right-hand side allows model terms to always be included (Inclusion probability = 1).
 
 - Add autoregressive component: Adds an autoregressive component to the model where the current state is predicted from it's previous state via an autoregressive coefficient(e.g. alpha[t] = phi*alpha[t-1] + error for an AR(1) process)
-    - Manually: The number in `No. of lags` determines the number of lags/coefficients added
-    - Automatic: Determines the optimal amount of coefficients by putting a spike and slab prior on them, with `Maximal lags` being the limit.
+  - Manually: The number in `No. of lags` determines the number of lags/coefficients added
+  - Automatic: Determines the optimal amount of coefficients by putting a spike and slab prior on them, with `Maximal lags` being the limit.
     
 - Add local level component: Adds a trend component consisting of a mean following a random walk to the state (mu[t] = mu[t-1] + error)
 
@@ -107,7 +106,15 @@ This table summarises the prior and posterior information of the predictor varia
 #### Prediction Plot:
 - Time stamps are on the x-axis and the actual distribution of the estimated states on the y-axis. The line before the dashed line are the actual observations. The dashed line represents the end of the dataset and the start of the prediction. The black line after the dashed line represents the mean of the predicted state and the blue shaded area the 95 percent credible interval.
 
+### References
+- Scott, S. L. (2020). bsts: Bayesian Structural Time Series (0.9.5) [Computer software]. https://CRAN.R-project.org/package=bsts
+- Scott, S. L., & Varian, H. R. (2014). Predicting the present with Bayesian structural time series. International Journal of Mathematical Modelling and Numerical Optimisation, 5(1/2), 4. https://doi.org/10.1504/IJMMNO.2014.059942
+- Scott, S. L., & Varian, H. R. (2015). Bayesian Variable Selection for Nowcasting Economic Time Series. In Economic Analysis of the Digital Economy (pp. 119–135). University of Chicago Press. https://doi.org/10.7208/chicago/9780226206981.003.0004
 
+
+### R Packages
+- bsts
+- ggplot2
 
 
 
