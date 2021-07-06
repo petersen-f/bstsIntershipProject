@@ -157,7 +157,7 @@ Form
 		CheckBox
 		{
 			name: "checkboxDynReg"
-			label: qsTr("Add Dynamic Regression Component")
+			label: qsTr("Add dynamic regression component")
 			checked: false
 			id: checkDynReg
 			Layout.columnSpan: 2
@@ -330,14 +330,18 @@ Form
 		{
 			title: qsTr('Residuals')
 			CheckBox {name:'checkBoxResidual'; label: qsTr('Posterior distribution of residuals')}
-			CheckBox {name:'checkBoxForecast'; label: qsTr('Posterior distribution of one-step-ahead prediction')}
-			CheckBox {name:'checkBoxForecastError'; label: qsTr('Error of one-step-ahead prediction')}
+			//CheckBox {name:'checkBoxForecast'; label: qsTr('Posterior distribution of one-step-ahead prediction')}
+			CheckBox {name:'checkBoxForecastError'; label: qsTr('Posterior distribution of one-step-ahead prediction error')}
 		}
 
 		Group
 		{
 			title: qsTr("Prediction")
-			CheckBox {name:'checkBoxPrediction'; label: qsTr('Prediction plot')}
+			DoubleField
+			{
+				name: "predictionHorizon"
+				label: qsTr("Horizon")
+			}
 		}
 
 	}
@@ -354,16 +358,6 @@ Form
 	//}
 
 	Section
-	{
-		title: qsTr("Prediction")
-
-		DoubleField
-		{
-			name: "predictionHorizon"
-			label: qsTr("Horizon")
-		}
-	}
-	Section
 
 	{
 
@@ -379,6 +373,8 @@ Form
 
 		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 500}
 
+		DoubleField { name:'timeout';		label: "Timout in seconds";	fieldWidth: 60; defaultValue: 30}
+
 		RadioButtonGroup
 		{
 			name: "burnSpecification"
@@ -386,7 +382,7 @@ Form
 			radioButtonsOnSameRow: TRUE
 			RadioButton
 			{
-				value: "burnSuggested"; label: qsTr("Automatic suggestion")
+				value: "burnSuggested"; label: qsTr("Automatic suggestion"); checked: true
 				DoubleField { name:'propBurnSuggested'
 											label: "Proportion"
 											fieldWidth: 60

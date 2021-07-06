@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+
+# TODO: - add Footnote when timeout was reached before mcmc draws were sampled completly
+#       - integrate MCMC draw specification
 # Main function ----
 bayesianStateSpace <- function(jaspResults, dataset, options) {
   # Set title
@@ -190,7 +193,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
   if(options$checkboxDynReg & options$DynRegLags==0)
-    ss <- bsts::AddDynamicRegression(ss,formula=formula,data=dat)
+    ss <- bsts::AddDynamicRegression(ss,formula=formula,data=data)
 
 
   if (!is.null(options$seasonalities)) {
@@ -204,10 +207,10 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
                         nseasons = seas$nSeason,
                         season.duration = seas$seasonDuration,
                         sigma.prior = sigma.prior,
-                       initial.state.prior = normal.prior
+                        initial.state.prior = normal.prior
                       )
-  #      #if(!seas$name == "")
-  #      #  ss[[length(ss)]]$name <- seas$name
+      if(!seas$name == "")
+        ss[[length(ss)]]$name <- seas$name
 
      }
   }
@@ -220,7 +223,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
                 state.specification = ss,
                 niter = options$mcmcDraws,
                 timestamps=NULL,
-                expected.model.size = options$expectedModelSize
+                expected.model.size = options$expectedModelSize,
+                model.options = bsts::BstsOptions(timeout.seconds = options$timeout )
                 )
 
   return(model)
@@ -330,6 +334,8 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsTable$addColumnInfo(name="R2",      title =gettextf("R%s", "\u00B2"),           type= "number")
   bstsTable$addColumnInfo(name="relGof",  title=gettext("Harvey's goodness of fit"),  type= "number")
 
+  #if (bstsResults$niter < options$mcmcDraws)
+  #  bstsTable$addFootnote(message=)
 
   .bstsFillModelSummaryTable(bstsTable,bstsResults,ready)
 
@@ -358,7 +364,6 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 .bstsCreateCoefficientTable <- function(jaspResults,options,ready){
   if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0 | !ready) return()
 
-  #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
   bstsCoefficientTable <- createJaspTable(title = gettext("Posterior Summary of Coefficients"))
   bstsCoefficientTable$position <- 2
@@ -523,7 +528,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
 .bstsCreatePredictionPlot <- function(jaspResults,options,ready) {
-  if(!ready | !options$checkBoxPrediction) return()
+  if(!ready | !options$predictionHorizon>0) return()
 
   bstsPredictionPlot <- createJaspPlot(title="Prediction plot")
 
