@@ -46,6 +46,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   .bstsCreateCoefficientTable(jaspResults,options,ready)
   .bstsCreateStatePlots(jaspResults,options,ready)
   .bstsCreatePredictionPlot(jaspResults,options,ready)
+  .bstsCreateControlPlots(jaspResults,options,ready)
 
   # Only to test certain plot things without having to put them in another container
 
@@ -112,6 +113,10 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 }
 
 
+.bstsControlDependencies <- function(options){
+  returnc('checkControlChart',"controlPeriod","controlSigma")
+}
+
 
 # Results functions "----",
 
@@ -168,8 +173,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   }
 
 
-  if(!is.numeric(y))
-    stop(gettext('lol'))
+
   #data <- data.frame(y=y)
   ss   <- list()
   #AddAr
@@ -223,14 +227,13 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
                 state.specification = ss,
                 niter = options$mcmcDraws,
                 timestamps=NULL,
+                seed = 1234,
                 expected.model.size = options$expectedModelSize,
                 model.options = bsts::BstsOptions(timeout.seconds = options$timeout )
                 )
 
   return(model)
 }
-
-
 
 
 
@@ -299,7 +302,14 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
 
+# helper function that determines which percentile rank the 2*sigma threshold is in the credible interval for each state
+quantInv <- function(distr, value){
 
+  if(sum(distr < value) == length(distr))
+    return(1) # 1 if valuelarger than all MCMC draws
+  else
+    ecdf(distr)(value)
+}
 
 
 
@@ -362,10 +372,12 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 # table for regression coefficients"
 .bstsCreateCoefficientTable <- function(jaspResults,options,ready){
-  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0 | !ready) return()
+  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsCoefficientSummaryTable"]]) | !length(options$modelTerms) >0 | !ready | !options$postSummaryTable) return()
+
 
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
   bstsCoefficientTable <- createJaspTable(title = gettext("Posterior Summary of Coefficients"))
+  bstsCoefficientTable$dependOn(c("postSummaryTable","showCoefMeanInc","posteriorSummaryCoefCredibleIntervalValue"))
   bstsCoefficientTable$position <- 2
 
   overtitle <- gettextf("%s%% Credible Interval", format(100*options[["posteriorSummaryCoefCredibleIntervalValue"]], digits = 3))
@@ -375,8 +387,10 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   bstsCoefficientTable$addColumnInfo(name = "BFinc", title = gettext("BF<sub>inclusion</sub>"), type = "number")
   bstsCoefficientTable$addColumnInfo(name = 'mean', title = gettext("Mean"), type = "number")
   bstsCoefficientTable$addColumnInfo(name = "sd", title = gettext("SD"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = 'meanInc', title = gettext("Mean<sub>inclusion</sub>"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = "sdInc", title = gettext("SD<sub>inclusion</sub>"), type = "number")
+  if (options$showCoefMeanInc){
+    bstsCoefficientTable$addColumnInfo(name = 'meanInc', title = gettext("Mean<sub>inclusion</sub>"), type = "number")
+    bstsCoefficientTable$addColumnInfo(name = "sdInc", title = gettext("SD<sub>inclusion</sub>"), type = "number")
+  }
   bstsCoefficientTable$addColumnInfo(name = "lowerCri",    title = gettext("Lower"),         type = "number", overtitle = overtitle)
   bstsCoefficientTable$addColumnInfo(name = "upperCri",    title = gettext("Upper"),         type = "number", overtitle = overtitle)
 
@@ -413,11 +427,16 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
       BFinc = res$BFinc[i],
       mean = res$mean[i],
       sd = res$sd[i],
-      meanInc = res$mean.inc[i],
-      sdInc = res$sd.inc[i]
-      ,lowerCri = res$lo_ci[i],
+      #meanInc = res$mean.inc[i],
+      #sdInc = res$sd.inc[i],
+      lowerCri = res$lo_ci[i],
       upperCri = res$hi_ci[i]
     )
+
+    if(options$showCoefMeanInc){
+      row <- append(row,c(meanInc = res$mean.inc[i],
+                          sdInc = res$sd.inc[i]) )
+    }
 
       bstsCoefficientTable$addRows(row)
 
@@ -454,7 +473,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   if (!ready | !options$checkboxPlotAggregatedStates) return()
 
 
-  bstsAggregatedStatePlot <- createJaspPlot(title= gettext("Aggregated State"))
+  bstsAggregatedStatePlot <- createJaspPlot(title= gettext("Aggregated State"), height = 320, width = 480)
   bstsAggregatedStatePlot$dependOn(c("ciAggregatedStates"))
 
   # get all states
@@ -480,12 +499,14 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
         ggplot2::geom_ribbon(mapping=ggplot2::aes(ymin=ymin,ymax =ymax),
                             fill ="blue",alpha=0.5) + ggplot2::xlab("Time") +
         ggplot2::ylab("Distribution") +
-        ggplot2::geom_line(size=0.7) +
-        ggplot2::theme_classic()
+        ggplot2::geom_line(size=0.7)
+      #  ggplot2::theme_classic()
 
 
   if(options$actualValuesAggregatedStates)
     p <- p + ggplot2::geom_point(ggplot2::aes(y=actualValues))
+
+  p <- jaspGraphs::themeJasp(p)
 
   bstsAggregatedStatePlot$plotObject <- p
 
@@ -498,7 +519,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 .bstsComponentStatePlot <- function(bstsStatePlots,bstsResults,options,ready){
 
-  bstsComponentStatePlot <- createJaspPlot(title= gettext("Component States"))
+  bstsComponentStatePlot <- createJaspPlot(title= gettext("Component States"), height = 320, width = 480)
 
   means <- apply(bstsResults$state.contribution, 2, colMeans)
 
@@ -530,7 +551,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 .bstsCreatePredictionPlot <- function(jaspResults,options,ready) {
   if(!ready | !options$predictionHorizon>0) return()
 
-  bstsPredictionPlot <- createJaspPlot(title="Prediction plot")
+  bstsPredictionPlot <- createJaspPlot(title="Prediction plot", height = 320, width = 480)
 
 
   bstsModelResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
@@ -553,7 +574,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   ggplot2::geom_vline(xintercept=length(bstsPredictionResults$original.series),linetype=2) +
   ggplot2::theme_classic()
 
-
+  p <- jaspGraphs::themeJasp(p)
 
   bstsPredictionPlot$plotObject <- p
   jaspResults[["bstsMainContainer"]][["bstsPredictionPlot"]] <- bstsPredictionPlot
@@ -562,6 +583,165 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 }
 
 
+# control plot
+
+.bstsCreateControlPlots <- function(jaspResults,options,ready){
+  if (!is.null(jaspResults[["bstsControlPlots"]]) | !ready) return()
+
+
+  bstsControlPlots <- createJaspContainer(title = gettext("Control Plots"))
+
+  bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
+
+
+
+  if(options$checkControlChart)
+    .bstsFillControlPlotThreshold(bstsControlPlots,bstsResults,options,ready)
+
+  if(options$checkControlProbPlot)
+    .bstsFillControlPlotProbability(bstsControlPlots,bstsResults,options,ready)
+
+
+  jaspResults[["bstsMainContainer"]][["bstsControlPlots"]] <- bstsControlPlots
+  return()
+
+}
+
+.bstsFillControlPlotThreshold <- function(bstsControlPlots,bstsResults,options,ready){
+
+  control = c(1:options$controlPeriod)
+  L = options$controlSigma
+  CI=.95 # add option in JASP later
+  bstsControlPlotThreshold <- createJaspPlot(title="Threshold Plot", height = 320, width = 480)
+
+  # extract model components
+  state <- bstsResults$state.contribution
+  # discard burn ins
+  state <- state[-(1:options$burn), , , drop = FALSE]
+  # sum to final state
+  state <- rowSums(aperm(state, c(1, 3, 2)), dims = 2)
+
+  # determine 0.95% credible interval
+  ymin <- apply(state,2,quantile,probs= ((1- CI)/2))
+  ymax <- apply(state,2,quantile,probs= 1-((1- CI)/2))
+
+  time <- 1:length(bstsResults$original.series)
+  mean <-colMeans(state)
+
+  # compute limits based on the estimated state
+  state_mean <- mean(mean[control])
+  state_sd <- sd(mean[control])
+
+
+  ul_state <- state_mean + L* state_sd
+  ll_state <- state_mean - L* state_sd
+
+  # ymin is lower 95 cI bound of state
+  # ul is the threshold that has to be exceeded according to 2 sigmas
+  # thus ymin must be larger  than the ul threshold
+  CI_reached <- ymin > ul_state # cases where 95% confident that above threshold
+
+
+  #print(paste0("First date where 2*sigma is exeeded by ",CI, " % state credible interval: ",
+  #             dat$date[which(ymin > ul_state)[1]]))
+
+
+
+  # now let's compute probability of exeeding the threshold by getting the percentile rank from the MCMC draws
+
+  #threshold_prob <- 1-apply(state, 2, quantInv,ul_state)
+
+  #plot(threshold_prob,type = 'l')
+
+
+
+  #p_probs <- ggplot(NULL,aes(time,threshold_prob)) +
+  #  geom_line() + theme_classic()
+
+
+
+
+  p <- ggplot2::ggplot(NULL,ggplot2::aes(x=time,y=mean))+
+    ggplot2::geom_ribbon(mapping=ggplot2::aes(ymin=ymin,ymax =ymax ),
+                         alpha=0.5,fill ="blue") + ggplot2::xlab("Time") +
+    ggplot2::ylab("Distribution") +
+    ggplot2::geom_line(size=0.7) +
+    ggplot2::theme_classic() +
+    ggplot2::geom_hline(yintercept=ul_state, linetype="dashed", color = "red") +
+    ggplot2::geom_hline(yintercept=ll_state, linetype="dashed", color = "red")
+
+
+    p <- jaspGraphs::themeJasp(p)
+
+    bstsControlPlotThreshold$plotObject <- p
+
+
+  bstsControlPlots[["bstsControlPlotThreshold"]] <- bstsControlPlotThreshold
+  return()
+}
+
+.bstsFillControlPlotProbability <- function(bstsControlPlots,bstsResults,options,ready){
+
+  bstsControlPlotProbability <- createJaspPlot(title="Probability Plot", height = 320, width = 480)
+
+
+  control = c(1:options$controlPeriod)
+  L = options$controlSigma
+  CI=.95 # add option in JASP later
+  bstsControlPlotThreshold <- createJaspPlot(title="Threshold Plot")
+
+  # extract model components
+  state <- bstsResults$state.contribution
+  # discard burn ins
+  state <- state[-(1:options$burn), , , drop = FALSE]
+  # sum to final state
+  state <- rowSums(aperm(state, c(1, 3, 2)), dims = 2)
+
+  # determine 0.95% credible interval
+  ymin <- apply(state,2,quantile,probs= ((1- CI)/2))
+  ymax <- apply(state,2,quantile,probs= 1-((1- CI)/2))
+
+  time <- 1:length(bstsResults$original.series)
+  mean <-colMeans(state)
+
+  # compute limits based on the estimated state
+  state_mean <- mean(mean[control])
+  state_sd <- sd(mean[control])
+
+
+  ul_state <- state_mean + L* state_sd
+  ll_state <- state_mean - L* state_sd
+
+  # ymin is lower 95 cI bound of state
+  # ul is the threshold that has to be exceeded according to 2 sigmas
+  # thus ymin must be larger  than the ul threshold
+  CI_reached <- ymin > ul_state # cases where 95% confident that above threshold
+
+
+  #print(paste0("First date where 2*sigma is exeeded by ",CI, " % state credible interval: ",
+  #             dat$date[which(ymin > ul_state)[1]]))
+
+
+
+  # now let's compute probability of exeeding the threshold by getting the percentile rank from the MCMC draws
+
+  threshold_prob <- 1-apply(state, 2, quantInv,ul_state)
+
+  #plot(threshold_prob,type = 'l')
+
+
+
+  p <- ggplot2::ggplot(NULL,ggplot2::aes(time,threshold_prob)) + ggplot2::xlab("Time") +
+  ggplot2::ylab("Probability") + ggplot2::geom_line() + ggplot2::theme_classic()
+
+
+  p <- jaspGraphs::themeJasp(p)
+
+  bstsControlPlotProbability$plotObject <- p
+
+  bstsControlPlots[["bstsControlPlotProbability"]] <- bstsControlPlotProbability
+  return()
+}
 #Plots for testing that don't serve a real function.
 
 
