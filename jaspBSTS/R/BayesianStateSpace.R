@@ -381,18 +381,18 @@ quantInv <- function(distr, value){
   bstsCoefficientTable$position <- 2
 
   overtitle <- gettextf("%s%% Credible Interval", format(100*options[["posteriorSummaryCoefCredibleIntervalValue"]], digits = 3))
-  bstsCoefficientTable$addColumnInfo(name = "coef", title = gettext("Coefficients"), type = "string")
-  bstsCoefficientTable$addColumnInfo(name = "priorIncP", title = gettext("P(incl)"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = "postIncP", title = gettext("P(incl|data)"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = "BFinc", title = gettext("BF<sub>inclusion</sub>"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = 'mean', title = gettext("Mean"), type = "number")
-  bstsCoefficientTable$addColumnInfo(name = "sd", title = gettext("SD"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "coef",       title = gettext("Coefficients"),           type = "string")
+  bstsCoefficientTable$addColumnInfo(name = "priorIncP",  title = gettext("P(incl)"),                type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "postIncP",   title = gettext("P(incl|data)"),           type = "number")
+  bstsCoefficientTable$addColumnInfo(name = "BFinc",      title = gettext("BF<sub>inclusion</sub>"), type = "number")
+  bstsCoefficientTable$addColumnInfo(name = 'mean',       title = gettext("Mean"),                   type = "number", format= "dp:3")
+  bstsCoefficientTable$addColumnInfo(name = "sd",         title = gettext("SD"),                     type = "number",format= "dp:3")
   if (options$showCoefMeanInc){
-    bstsCoefficientTable$addColumnInfo(name = 'meanInc', title = gettext("Mean<sub>inclusion</sub>"), type = "number")
-    bstsCoefficientTable$addColumnInfo(name = "sdInc", title = gettext("SD<sub>inclusion</sub>"), type = "number")
+    bstsCoefficientTable$addColumnInfo(name = 'meanInc',  title = gettext("Mean<sub>inclusion</sub>"), type = "number")
+    bstsCoefficientTable$addColumnInfo(name = "sdInc",    title = gettext("SD<sub>inclusion</sub>"), type = "number")
   }
-  bstsCoefficientTable$addColumnInfo(name = "lowerCri",    title = gettext("Lower"),         type = "number", overtitle = overtitle)
-  bstsCoefficientTable$addColumnInfo(name = "upperCri",    title = gettext("Upper"),         type = "number", overtitle = overtitle)
+  bstsCoefficientTable$addColumnInfo(name = "lowerCri",   title = gettext("Lower"),         type = "number", overtitle = overtitle)
+  bstsCoefficientTable$addColumnInfo(name = "upperCri",   title = gettext("Upper"),         type = "number", overtitle = overtitle)
 
   .bstsFillCoefficientTable(bstsResults,bstsCoefficientTable,options,ready)
 
@@ -408,7 +408,7 @@ quantInv <- function(distr, value){
 
   # TODO: figure out how to get CI for factor variables
   condQuantile <- function(beta,ci){
-    beta <- beta[beta != 0]
+    #beta <- beta[beta != 0]
     if (length(beta)>0)
       return(quantile(beta,ci))
     return(0)
@@ -520,6 +520,8 @@ quantInv <- function(distr, value){
 .bstsComponentStatePlot <- function(bstsStatePlots,bstsResults,options,ready){
 
   bstsComponentStatePlot <- createJaspPlot(title= gettext("Component States"), height = 320, width = 480)
+
+
 
   means <- apply(bstsResults$state.contribution, 2, colMeans)
 
@@ -740,35 +742,5 @@ quantInv <- function(distr, value){
   bstsControlPlotProbability$plotObject <- p
 
   bstsControlPlots[["bstsControlPlotProbability"]] <- bstsControlPlotProbability
-  return()
-}
-#Plots for testing that don't serve a real function.
-
-
-.bstsSimplePlot <- function(jaspResults,options) {
-  if(!is.null(jaspResults[["bstsSimplePlot"]])) return()
-  bstsSimplePlot <- createJaspPlot(title="Test")
-
-  bstsSimplePlot$dependOn(c("checkboxPlotAggregatedStates","ciAggregatedStates",'propBurnSuggested'))
-
-
-
-
-  jaspResults[["bstsSimplePlot"]] <- bstsSimplePlot
-
-  .bstsFillSimplePlot(bstsSimplePlot,jaspResults,options)
-}
-
-
-.bstsFillSimplePlot <- function(bstsSimplePlot,jaspResults,options) {
-  #bstsResults <- jaspResults[["stateBstsResults"]]$object
-  bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
-
-  p <- ggplot2::ggplot(NULL,ggplot2::aes(y=bstsResults$original.series,x=1:length(bstsResults$original.series))) +
-  ggplot2::theme_classic() + ggplot2::geom_line() +
-  ggplot2::xlab(paste(1)) #test for burn
-
-  bstsSimplePlot$plotObject <- p
-
   return()
 }
