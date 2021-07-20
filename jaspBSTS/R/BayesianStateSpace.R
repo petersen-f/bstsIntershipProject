@@ -359,12 +359,13 @@ quantInv <- function(distr, value){
 
 
 .bstsCreateModelSummaryTable <- function(jaspResults,options,ready){
-  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsModelSummaryTable"]])) return()
+  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsModelSummaryTable"]])|!ready) return()
 
   #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
 
   bstsTable <- createJaspTable(title = gettext("Model Summary"))
+  bstsTable$dependOn(c("burnSpecification",'propBurnSuggested','numberBurnManual'))
   bstsTable$position <- 1
 
   bstsTable$addColumnInfo(name="resSd",   title=gettext("Residual SD"),               type= "number")
@@ -372,8 +373,10 @@ quantInv <- function(distr, value){
   bstsTable$addColumnInfo(name="R2",      title =gettextf("R%s", "\u00B2"),           type= "number")
   bstsTable$addColumnInfo(name="relGof",  title=gettext("Harvey's goodness of fit"),  type= "number")
 
-  #if (bstsResults$niter < options$mcmcDraws)
-  #  bstsTable$addFootnote(message=)
+  if (bstsResults$niter < options$mcmcDraws)
+    bstsTable$addFootnote(message=paste0("Only ",bstsResults$niter," draws where sampled out of the desired ",options$mcmcDraws,". Additionally ",options$burn, " MCMC draws out of ", bstsResults$niter, " are discarded as burn in."))
+    else
+        bstsTable$addFootnote(message=paste0(options$burn, " MCMC draws out of ", bstsResults$niter, " are discarded as burn in."))
 
   .bstsFillModelSummaryTable(bstsTable,bstsResults,ready)
 
@@ -676,21 +679,10 @@ quantInv <- function(distr, value){
   CI_reached <- ymin > ul_state # cases where 95% confident that above threshold
 
 
-  #print(paste0("First date where 2*sigma is exeeded by ",CI, " % state credible interval: ",
-  #             dat$date[which(ymin > ul_state)[1]]))
 
 
 
-  # now let's compute probability of exeeding the threshold by getting the percentile rank from the MCMC draws
 
-  #threshold_prob <- 1-apply(state, 2, quantInv,ul_state)
-
-  #plot(threshold_prob,type = 'l')
-
-
-
-  #p_probs <- ggplot(NULL,aes(time,threshold_prob)) +
-  #  geom_line() + theme_classic()
 
 
 
@@ -704,10 +696,30 @@ quantInv <- function(distr, value){
     ggplot2::geom_hline(yintercept=ul_state, linetype="dashed", color = "red") +
     ggplot2::geom_hline(yintercept=ll_state, linetype="dashed", color = "red")
 
+  if(options$dates !="")
+    time_date <- "date"
+  else
+    time_date <- "time point"
+
+  first_threshold <- time[which(ymin > ul_state)[1]]
+
+
+
 
     p <- jaspGraphs::themeJasp(p)
 
-    bstsControlPlotThreshold$plotObject <- p
+    if(!is.na(first_threshold))
+      p <- p + ggplot2::labs(caption=paste0("First ",time_date," where ",L,"*sigma is exeeded by ",CI, " % state credible interval: ",first_threshold))
+    else
+      p <- p + ggplot2::labs(caption= paste0("Threshold never reached"))
+
+
+
+  p <- p+ ggplot2::theme(plot.caption = ggplot2::element_text(face="italic",hjust = 0,size=12)) +
+   ggplot2::theme(plot.margin = ggplot2::margin(0, 15, 10, 15))
+
+  bstsControlPlotThreshold$plotObject <- p
+
 
 
   bstsControlPlots[["bstsControlPlotThreshold"]] <- bstsControlPlotThreshold
@@ -766,10 +778,11 @@ quantInv <- function(distr, value){
 
 
   p <- ggplot2::ggplot(NULL,ggplot2::aes(time,threshold_prob)) + ggplot2::xlab("Time") +
-  ggplot2::ylab("Probability") + ggplot2::geom_line() + ggplot2::theme_classic()
+  ggplot2::ylab("Probability") + ggplot2::geom_line() + ggplot2::theme_classic() + ggplot2::ylim(0,1)
 
 
-  p <- jaspGraphs::themeJasp(p)
+  p <- jaspGraphs::themeJasp(p) +
+   ggplot2::theme(plot.margin = ggplot2::margin(0, 15, 10, 15))
 
   bstsControlPlotProbability$plotObject <- p
 
