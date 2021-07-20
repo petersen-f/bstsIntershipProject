@@ -13,7 +13,7 @@ Form
 		AssignedVariablesList	{ name: "dependent";	title: qsTr("Dependent Variable");	suggestedColumns: ["scale"];	singleVariable: true}
 		AssignedVariablesList	{ name: "covariates";	title: qsTr("Covariates");			suggestedColumns: ["scale"];	allowedColumns: ["scale"]	}
 		AssignedVariablesList 	{ name: "factors";		title: qsTr("Factors");				allowedColumns: ["ordinal", "nominal", "nominalText"]		}
-		//AssignedVariablesList	{ name: "time";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
+		AssignedVariablesList	{ name: "dates";			title: qsTr("Time");				suggestedColumns: ["nominal"];	singleVariable: true		}
 	}
 
 	columns: 2
@@ -22,15 +22,19 @@ Form
 	{
 		title: qsTr("Output")
 		columns: 1
-		CheckBox{ name: "postSummaryTable"; label: qsTr("Posterior summary of coefficients"); id: postSummaryTable }
+		CheckBox
+		{
+			name: "postSummaryTable"; label: qsTr("Posterior summary of coefficients"); id: postSummaryTable
+			CheckBox { name: "showCoefMeanInc"; label: qsTr("Show means across draws included") }
+		}
 		CIField
 		{
 			name: "posteriorSummaryCoefCredibleIntervalValue"
 			label: qsTr("Credible interval")
 			enabled: postSummaryTable.checked
 		}
-
 	}
+
 	Group
 	{
 		DoubleField
@@ -273,6 +277,7 @@ Form
 
 		title: qsTr('Plots')
 
+
 		Group
 		{
 			title: qsTr('State Plots')
@@ -344,6 +349,21 @@ Form
 			}
 		}
 
+		Group
+		{
+			title: qsTr("Control chart")
+			CheckBox
+			{
+				name:'checkControlChart'; label: qsTr('Show control chart')
+
+				DoubleField {name: "controlPeriod"; label:"Control period end"; defaultValue: 100}
+				DoubleField {name: "controlSigma"; label:"σ threshold"; defaultValue: 2}
+				CheckBox{name: "checkControlProbPlot";label: "Show probalistic control plot"}
+
+			}
+
+		}
+
 	}
 
 	//Section
@@ -371,9 +391,9 @@ Form
 		//	values: [ 'Gaussian', 'Logit','Poisson','Student']
 		//}
 
-		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 500}
+		DoubleField { name:'mcmcDraws';		label: "Desired MCMC draws";	fieldWidth: 60; defaultValue: 2000}
 
-		DoubleField { name:'timeout';		label: "Timout in seconds";	fieldWidth: 60; defaultValue: 30}
+		DoubleField { name:'timeout';		label: "Timout in seconds";	fieldWidth: 60; defaultValue: 120}
 
 		RadioButtonGroup
 		{
@@ -402,6 +422,7 @@ Form
 										 	}
 			}
 		}
+		DoubleField { name:'seed';		label: "Seed";	fieldWidth: 60; defaultValue: 1}
 
 	}
 }
