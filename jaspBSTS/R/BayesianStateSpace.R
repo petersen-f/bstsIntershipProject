@@ -18,6 +18,7 @@
 
 # TODO: - add Footnote when timeout was reached before mcmc draws were sampled completly
 #       - integrate MCMC draw specification
+#       - fix mcmc burn in for state component plot
 # Main function ----
 bayesianStateSpace <- function(jaspResults, dataset, options) {
   # Set title
@@ -39,12 +40,13 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
   # Compute burn amount and pass it to/create options$burn
   options <- .bstsBurnHelper(jaspResults,options)
+  options <- .bstsTimeHelper(jaspResults,dataset,options)
 
   # Output containers, tables, and plots based on the results. These functions should not return anything!
   #.bstsCreateContainerMain(jaspResults,options,ready)
   .bstsCreateModelSummaryTable(jaspResults,options,ready)
   .bstsCreateCoefficientTable(jaspResults,options,ready)
-  .bstsCreateStatePlots(jaspResults,options,ready)
+  .bstsCreateStatePlots(jaspResults,dataset,options,ready)
   .bstsCreatePredictionPlot(jaspResults,options,ready)
   .bstsCreateControlPlots(jaspResults,options,ready)
 
@@ -69,7 +71,11 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   numericVariables  <- c(options$dependent,unlist(options$covariates))
   numericVariables  <- numericVariables[numericVariables != ""]
   nominalVars       <- unlist(options$factors)
-  dataset <- .readDataSetToEnd(columns.as.numeric  = numericVariables, columns.as.factor = nominalVars)
+  timeVar           <- unlist(options$dates)
+  timeVar           <- timeVar[timeVar != ""]
+  dataset <- .readDataSetToEnd(columns.as.numeric  = numericVariables,
+                              columns.as.factor = nominalVars,
+                              columns = timeVar)
 
   return(dataset)
 
@@ -107,6 +113,9 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
             "checkboxDynReg"
           ))
 }
+.bstsStatePlotDependencies <- function(options){
+  return(c('checkboxPlotAggregatedStates','ciAggregatedStates',"actualValuesAggregatedStates",'checkboxPlotComponentStates'))
+}
 
 .bstsPredictionDependencies <- function(options){
   return(c("predictionHorizon"))
@@ -114,7 +123,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 
 .bstsControlDependencies <- function(options){
-  returnc('checkControlChart',"controlPeriod","controlSigma")
+  return(c('checkControlChart',"controlPeriod","controlSigma","checkControlProbPlot"))
 }
 
 
@@ -227,7 +236,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
                 state.specification = ss,
                 niter = options$mcmcDraws,
                 timestamps=NULL,
-                seed = 1234,
+                seed = options$seed,
                 expected.model.size = options$expectedModelSize,
                 model.options = bsts::BstsOptions(timeout.seconds = options$timeout )
                 )
@@ -256,6 +265,25 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
   return(options)
 }
+
+
+.bstsTimeHelper <- function(jaspResults,dataset,options){
+  bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
+
+  actualValues <- as.numeric(bstsResults$original.series)
+  if(options$dates != "")
+    options$time <- as.POSIXct(dataset[[encodeColNames(options$dates)]], tz = "UTC")
+  else
+    options$time <- 1:length(actualValues)
+
+  return(options)
+
+}
+
+
+
+
+
 
 
 
@@ -446,7 +474,7 @@ quantInv <- function(distr, value){
 }
 
 
-.bstsCreateStatePlots <- function(jaspResults,options,ready) {
+.bstsCreateStatePlots <- function(jaspResults,dataset,options,ready) {
 
 
   if (!is.null(jaspResults[["bstsStatePlots"]])) return()
@@ -455,12 +483,12 @@ quantInv <- function(distr, value){
   bstsStatePlots <- createJaspContainer(title = gettext("State Plots"))
 
 
-  #bstsStatePlots$dependOn(c("dependent","ciAggregatedStates"))
+  bstsStatePlots$dependOn(.bstsStatePlotDependencies(options))
 
   #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
 
-  if(options$checkboxPlotAggregatedStates) .bstsAggregatedStatePlot(bstsStatePlots,bstsResults,options,ready)
+  if(options$checkboxPlotAggregatedStates) .bstsAggregatedStatePlot(bstsStatePlots,bstsResults,dataset,options,ready)
   if(options$checkboxPlotComponentStates)
     .bstsComponentStatePlot(bstsStatePlots,bstsResults,options,ready)
 
@@ -469,12 +497,12 @@ quantInv <- function(distr, value){
   return()
 }
 
-.bstsAggregatedStatePlot <- function(bstsStatePlots,bstsResults,options,ready) {
+.bstsAggregatedStatePlot <- function(bstsStatePlots,bstsResults,dataset,options,ready) {
   if (!ready | !options$checkboxPlotAggregatedStates) return()
 
 
   bstsAggregatedStatePlot <- createJaspPlot(title= gettext("Aggregated State"), height = 320, width = 480)
-  bstsAggregatedStatePlot$dependOn(c("ciAggregatedStates"))
+  #bstsAggregatedStatePlot$dependOn(c("ciAggregatedStates"))
 
   # get all states
   state <- bstsResults$state.contribution
@@ -489,8 +517,7 @@ quantInv <- function(distr, value){
   ymin <- apply(state,2,quantile,probs= ((1- options$ciAggregatedStates)/2))
   ymax <- apply(state,2,quantile,probs= 1-((1- options$ciAggregatedStates)/2))
 
-
-  time <- 1:length(actualValues)
+  time <- options$time
 
   mean <-colMeans(state)
 
@@ -523,23 +550,27 @@ quantInv <- function(distr, value){
 
 
 
-  means <- apply(bstsResults$state.contribution, 2, colMeans)
+  means <- as.data.frame(apply(bstsResults$state.contribution, 2, colMeans))
 
-  ymin <- apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.025))
-  ymax <- apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.975))
+  means$time <- options$time
 
-  ymin <- reshape2::melt(ymin)
-  ymax <- reshape2::melt(ymax)
-  means2 <- reshape2::melt(means)
+  ymin <- as.data.frame(apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.025)))
+  ymax <- as.data.frame(apply(bstsResults$state.contribution, 2,matrixStats::colQuantiles,probs=c(0.975)))
+  ymin$time <- options$time
+  ymax$time <- options$time
 
-  p <-  ggplot2::ggplot(data=means2, ggplot2::aes(x=mcmc.iteration, y=value)) +
-        ggplot2::geom_line() +
-        ggplot2::geom_ribbon(ggplot2::aes(ymin=ymin$value,ymax=ymax$value),
-        fill ="blue",alpha=0.5) +
-        ggplot2::theme_bw() + ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::ylab("") + ggplot2::xlab("") +
-        ggplot2::facet_grid(component ~ ., scales="free") +
-        ggplot2::guides(colour=FALSE) +
-        ggplot2::theme(axis.text.x=ggplot2::element_text(angle = -90, hjust = 0))
+  ymin <- reshape2::melt(ymin,id.vars='time',variable.name="component")
+  ymax <- reshape2::melt(ymax,id.vars='time',variable.name="component")
+  means2 <- reshape2::melt(means,id.vars='time',variable.name="component")
+
+  p <-  ggplot2::ggplot(data=means2, ggplot2::aes(x=time, y=value)) +
+    ggplot2::geom_line() +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin=ymin$value,ymax=ymax$value),
+                        fill ="blue",alpha=0.5) +
+                        ggplot2::theme_bw() + ggplot2::theme(legend.title = ggplot2::element_blank()) + ggplot2::ylab("") + ggplot2::xlab("")   +
+                        ggplot2::facet_grid(component ~ ., scales="free") +
+                        ggplot2::guides(colour=FALSE) +
+                        ggplot2::theme(axis.text.x=ggplot2::element_text(angle = -90, hjust = 0))
 
 
   bstsComponentStatePlot$plotObject <- p
@@ -593,6 +624,7 @@ quantInv <- function(distr, value){
 
   bstsControlPlots <- createJaspContainer(title = gettext("Control Plots"))
 
+  bstsControlPlots$dependOn(.bstsControlDependencies(options))
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
 
 
@@ -627,7 +659,7 @@ quantInv <- function(distr, value){
   ymin <- apply(state,2,quantile,probs= ((1- CI)/2))
   ymax <- apply(state,2,quantile,probs= 1-((1- CI)/2))
 
-  time <- 1:length(bstsResults$original.series)
+  time <- options$time
   mean <-colMeans(state)
 
   # compute limits based on the estimated state
@@ -703,7 +735,7 @@ quantInv <- function(distr, value){
   ymin <- apply(state,2,quantile,probs= ((1- CI)/2))
   ymax <- apply(state,2,quantile,probs= 1-((1- CI)/2))
 
-  time <- 1:length(bstsResults$original.series)
+  time <- options$time
   mean <-colMeans(state)
 
   # compute limits based on the estimated state
