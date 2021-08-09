@@ -183,8 +183,8 @@ Form
 					Label { text: qsTr("Name"); Layout.preferredWidth: 80 * preferencesModel.uiScale							}
 					Label { text: qsTr("Number"); Layout.preferredWidth: 45 * preferencesModel.uiScale				}
 					Label { text: qsTr("Duration"); Layout.preferredWidth: 45 * preferencesModel.uiScale				}
-					Label { text: qsTr("Inverse gamma prior σ² \n      σ²     sample size"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
-					Label { text: qsTr("Normal prior initial state  \n      μ           σ²"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
+					Label { text: qsTr("Inverse gamma prior"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
+					Label { text: qsTr("Normal prior initial state"); Layout.preferredWidth: 140 * preferencesModel.uiScale			}
 				}
 
 				ComponentsList
@@ -235,6 +235,7 @@ Form
 							TextField
 							{
 								name: "sigma.guess"
+								label: "σ"
 								fieldWidth: 60 * preferencesModel.uiScale
 								placeholderText: ".01 * sdy"
 
@@ -242,6 +243,7 @@ Form
 							DoubleField
 							{
 								name: "sample.size"
+								label: "n"
 								defaultValue: 0.01
 							}
 						}
@@ -253,6 +255,7 @@ Form
 							DoubleField
 							{
 								name: "mu"
+								label: "μ"
 								defaultValue: 0
 
 
@@ -260,6 +263,7 @@ Form
 							TextField
 							{
 								name: "sigma"
+								label:"σ²"
 								placeholderText: "sdy"
 								fieldWidth: 40 * preferencesModel.uiScale
 							}
