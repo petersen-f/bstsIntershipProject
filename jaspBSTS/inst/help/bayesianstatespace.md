@@ -19,38 +19,39 @@ The Bayesian State Space Model decomposes the hidden state of a time series into
 
 #### Output
 - Posterior summary of coefficients: Output table containing the marginal posterior summary of coefficients
+  - Show means across draws included: Option that additionally shows the mean of the coefficients only if they were above 0/included in the model
   - Credible Interval: Determines the credible interval shown for the coefficients, given they are included in the model
 - Expected predictors: Number of predictors that are expected, affects prior inclusion probability
 
 ### Model Components
 ---
 #### Components and model terms
-  - Components: All the independent variables that can be included in the model. 
+  - Components: All the independent variables that can be included in the model.
   - Model terms: The independent variables in the model. By default, all the main effects of the specified independent variables are included in the model. To include interactions, click multiple variables (e.g., by holding the ctrl/cmd button on your keyboard while clicking) and drag those into the `Model Terms` box. Ticking the boxes on the right-hand side allows model terms to always be included (Inclusion probability = 1).
 
 - Add autoregressive component: Adds an autoregressive component to the model where the current state is predicted from it's previous state via an autoregressive coefficient(e.g. alpha[t] = phi*alpha[t-1] + error for an AR(1) process)
   - Manually: The number in `No. of lags` determines the number of lags/coefficients added
   - Automatic: Determines the optimal amount of coefficients by putting a spike and slab prior on them, with `Maximal lags` being the limit.
-    
+
 - Add local level component: Adds a trend component consisting of a mean following a random walk to the state (mu[t] = mu[t-1] + error)
 
 - Add local linear trend component: Adds a trend components consisting of a mean(mu[t] = mu[t-1] + delta[t-1] + error) and a slope (delta[t] = delta[t-1]+error) which both follow a random walk.
 
-- Add dynamic regression component: When variables were added to the `Model Terms` box this option can be used to make the regression coefficients dynamic/change over time where they follow a random walk. 
+- Add dynamic regression component: When variables were added to the `Model Terms` box this option can be used to make the regression coefficients dynamic/change over time where they follow a random walk.
   - Lag of coefficient: If the dynamic coefficient should follow an autoregressive process instead of a random walk, this option determines the order of the AR(p) process
-  
+
 #### Seasonalities
 - This box can be used to add one or more seasonality components to the model
-  - Name: Name of the seasonality. If not provided automatic name containing the number and duration of seasonality will be created. 
+  - Name: Name of the seasonality. If not provided automatic name containing the number and duration of seasonality will be created.
   - Number: The total number of seasons to be included after which cycle starts again (e.g. 12 for monthly seasonality or 52 for weekly). Each season gets a dummy variable with dynamic coefficients following a random walk
   - Duration: The number of data points each season contains. For example if we have a weekly time series (i.e. 54 data points for 54 weeks) but want to model a monthly seasonality we would set the `Number` to 12 and the `Duration` to 4 as each season lasts/contains 4 time points.
   - Inverse gamma prior for σ: This prior determines the expectations regarding the σ of the random walk. Parameterised as a scaled inverse Chi-Squared distribution:
     - σ: Prior guess for the standard deviation
-    - Sample size: Prior observation count/degrees of freedom that weight the σ guess
+    - n: Prior observation count/degrees of freedom that weight the σ guess
   - Normal Prior initial state: This normal distribution determines our expectation regarding the first value of our seasonality which is then used by the Kalman filter:
     - μ: Mean of prior distribution
     - σ: Standard deviation of prior distribution
-    
+
 ### Plots
 ---
 #### State Plots
@@ -67,6 +68,12 @@ The Bayesian State Space Model decomposes the hidden state of a time series into
 - This option plots the posterior predictive distribution sampled from the specified state space model. As of now only possible without predictor variables.
   - Horizon: Determines the number of time points into the future that are predicted. Value needs to be larger than 0 to make predictions and show a plot.
 
+#### Control chart
+- Show control chart: This option plots the aggregated state but adds a critical threshold that can be used as a control chart. The threshold is calculated by mean(state) +/- L*sigma
+  - Control period end: The end of the baseline period that is used to calculate the mean and sigma for the threshold
+  - Sigma threshold: How many sigmas a value has to exeed our mean to be considered as a critical value
+  - Show probalistic control plot: Instead of plotting whether the aggregated state and its credible interval exeed the threshold, this plot shows the probability that the state exceeds the threshold.
+
 ### Advanced Options
 ---
 - Desired MCMC draws: Integer which determines how many samples from the posterior distribution will be drawn.
@@ -77,7 +84,7 @@ The Bayesian State Space Model decomposes the hidden state of a time series into
   - Proportion: Determines the tail fraction from which the log-likelihood will be determined.
 - Manual: Manually select how many MCMC draws will be discarded as a burn-in
   - Number: Every draw before this number will be considered a burn-in period.
-  
+
 ### Output
 ---
 #### Model Summary
@@ -85,7 +92,7 @@ This table summarises the overall fit of the model:
 - Residual SD: The posterior mean of the residual standard deviation parameter.
 - Prediction SD: Standard deviation of the one-step-ahead prediction error that result from the Kalman filter.
 - R²: Proportion of the variance of the original series that is explained by the state space model
-- Harvey's goodness of fit: 
+- Harvey's goodness of fit:  Proportion of variance explained when estimations are not compared with sample mean to compute variance but rather a random walk. More appropriate for time series data.
 
 #### Posterior Summary of Coefficients
 This table summarises the prior and posterior information of the predictor variables and their coefficients:
@@ -100,11 +107,11 @@ This table summarises the prior and posterior information of the predictor varia
 - Credible Interval: Credible Interval of the mean of each coefficient given they were included in the model
 
 #### State Plots:
-- Aggregated State: Time stamps are on the x-axis and the actual distribution of the estimated states on the y-axis. If the option `Actual observations` is selected, the real dependent variable values will be shown as points. 
+- Aggregated State: Time stamps are on the x-axis and the actual distribution of the estimated states on the y-axis. If the option `Actual observations` is selected, the real dependent variable values will be shown as points.
 - Component State plot: Plots the individual contribution of each state contribution to the overall state. Time stamps are on the x-axis and the distribution of each component on the y axis. Each component has a single column where the label on the right corresponds to the component name. The blue shaded area reflects the credible interval.
 
 #### Prediction Plot:
-- Time stamps are on the x-axis and the actual distribution of the estimated states on the y-axis. The line before the dashed line are the actual observations. The dashed line represents the end of the dataset and the start of the prediction. The black line after the dashed line represents the mean of the predicted state and the blue shaded area the 95 percent credible interval.
+- Time stamps are on the x-axis and the actual distribution of the estimated states on the y-axis. The line before the dashed line are the actual observations. The dashed line represents the end of the data set and the start of the prediction. The black line after the dashed line represents the mean of the predicted state and the blue shaded area the 95 percent credible interval.
 
 ### References
 - Scott, S. L. (2020). bsts: Bayesian Structural Time Series (0.9.5) [Computer software]. https://CRAN.R-project.org/package=bsts
@@ -115,6 +122,3 @@ This table summarises the prior and posterior information of the predictor varia
 ### R Packages
 - bsts
 - ggplot2
-
-
-

@@ -49,6 +49,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   .bstsCreateStatePlots(jaspResults,dataset,options,ready)
   .bstsCreatePredictionPlot(jaspResults,options,ready)
   .bstsCreateControlPlots(jaspResults,options,ready)
+  .bstsCreateErrorPlots(jaspResults,options,ready)
 
   # Only to test certain plot things without having to put them in another container
 
@@ -787,5 +788,93 @@ quantInv <- function(distr, value){
   bstsControlPlotProbability$plotObject <- p
 
   bstsControlPlots[["bstsControlPlotProbability"]] <- bstsControlPlotProbability
+  return()
+}
+
+.bstsCreateErrorPlots <- function(jaspResults,options,ready) {
+  if (!is.null(jaspResults[["bstsErrorPlots"]])) return()
+
+
+  bstsErrorPlots <- createJaspContainer(title = gettext("Error Plots"))
+
+
+  #bstsStatePlots$dependOn(.bstsStatePlotDependencies(options))
+
+  #bstsResults <- jaspResults[["stateBstsResults"]]$object
+  bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
+
+  if(options$checkBoxResidual) .bstsResidualPlot(bstsErrorPlots,bstsResults,options,ready)
+  if(options$checkBoxForecastError)
+    .bstsForecastErrorPlot(bstsErrorPlots,bstsResults,options,ready)
+
+
+  jaspResults[["bstsMainContainer"]][["bstsErrorPlots"]] <- bstsErrorPlots
+  return()
+}
+
+
+.bstsResidualPlot <- function(bstsErrorPlots,bstsResults,options,ready){
+  if (!ready | !options$checkBoxResidual) return()
+
+
+  bstsResidualPlot <- createJaspPlot(title= gettext("Residual Plot"), height = 320, width = 480)
+  #bstsAggregatedStatePlot$dependOn(c("ciAggregatedStates"))
+  residuals <- bsts::residuals.bsts(bstsResults,options$burn)
+
+
+
+  mean <- colMeans(residuals)
+  ymin <- apply(residuals,2,quantile,probs= ((1- options$ciAggregatedStates)/2))
+  ymax <- apply(residuals,2,quantile,probs= 1-((1- options$ciAggregatedStates)/2))
+
+  time <- options$time
+
+  p <-  ggplot2::ggplot(NULL,ggplot2::aes(x=time,y=mean)) +
+  ggplot2::geom_ribbon(mapping=ggplot2::aes(ymin=ymin,ymax =ymax),
+                       fill ="blue",alpha=0.5) + ggplot2::xlab("Time") +
+  ggplot2::ylab("Distribution") +
+  ggplot2::geom_line(size=0.7)
+#  ggplot2::theme_classic()
+
+
+  p <- jaspGraphs::themeJasp(p)
+
+
+  bstsResidualPlot$plotObject <- p
+
+  bstsErrorPlots[["bstsResidualPlot"]] <- bstsResidualPlot
+
+  return()
+}
+
+.bstsForecastErrorPlot <- function(bstsErrorPlots,bstsResults,options,ready){
+  if (!ready | !options$checkBoxForecastError) return()
+
+
+  bstsForecastErrorPlot <- createJaspPlot(title= gettext("Forecast Error Plot"), height = 320, width = 480)
+  #bstsAggregatedStatePlot$dependOn(c("ciAggregatedStates"))
+  errors <- bsts::bsts.prediction.errors(bstsResults,burn=options$burn)$in.sample
+
+  mean <- colMeans(errors)
+  ymin <- apply(errors,2,quantile,probs= ((1- options$ciAggregatedStates)/2))
+  ymax <- apply(errors,2,quantile,probs= 1-((1- options$ciAggregatedStates)/2))
+
+  time <- options$time
+
+  p <-  ggplot2::ggplot(NULL,ggplot2::aes(x=time,y=mean)) +
+    ggplot2::geom_ribbon(mapping=ggplot2::aes(ymin=ymin,ymax =ymax),
+                         fill ="blue",alpha=0.5) + ggplot2::xlab("Time") +
+    ggplot2::ylab("Distribution") +
+    ggplot2::geom_line(size=0.7)
+  #  ggplot2::theme_classic()
+
+
+
+  p <- jaspGraphs::themeJasp(p)
+
+  bstsForecastErrorPlot$plotObject <- p
+
+  bstsErrorPlots[["bstsForecastErrorPlot"]] <- bstsForecastErrorPlot
+
   return()
 }
