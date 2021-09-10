@@ -24,7 +24,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
   # Set title
 
   # check if results can be computed
-  ready <- (options$dependent != "" & any(options[c("checkboxAr","checkboxLocalLevel","checkboxLocalLinearTrend")]==T,length(options$seasonalities)>0))
+  ready <- (options$dependent != "" && any(options[c("checkboxAr","checkboxLocalLevel","checkboxLocalLinearTrend")]==TRUE,length(options$seasonalities)>0))
   # Init options: add variables to options to be used in the remainder of the analysis
 
   # read dataset
@@ -85,19 +85,18 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
 
 .bstsErrorHandling <- function(dataset, options) {
   # Custom function to check whether we missing values in predictors
-  # Error 1: Any missing values in predictors?
-  # Doesn't work for some reason
-  for (covariate in options$covariates) {
-    .hasErrors(dataset = dataset,
-              type = 'missingValues',
-              missingValues.target = covariate,
-              exitAnalysisIfErrors = TRUE)
 
-  }
+
+  .hasErrors(dataset = dataset,
+            type = 'missingValues',
+            missingValues.target = options$covariates,
+            exitAnalysisIfErrors = TRUE)
+
+
 
 }
 
-.bstsModelDependencies <- function(options) {
+.bstsModelDependencies <- function() {
   return(c("dependent",
             "covariates",
             "postSummaryTable",
@@ -114,16 +113,16 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
             "checkboxDynReg"
           ))
 }
-.bstsStatePlotDependencies <- function(options){
+.bstsStatePlotDependencies <- function(){
   return(c('checkboxPlotAggregatedStates','ciAggregatedStates',"actualValuesAggregatedStates",'checkboxPlotComponentStates'))
 }
 
-.bstsPredictionDependencies <- function(options){
+.bstsPredictionDependencies <- function(){
   return(c("predictionHorizon"))
 }
 
 
-.bstsControlDependencies <- function(options){
+.bstsControlDependencies <- function(){
   return(c('checkControlChart',"controlPeriod","controlSigma","checkControlProbPlot"))
 }
 
@@ -137,7 +136,7 @@ bayesianStateSpace <- function(jaspResults, dataset, options) {
     bstsMainContainer <- createJaspContainer()
     jaspResults[["bstsMainContainer"]] <- bstsMainContainer
 
-    jaspResults[["bstsMainContainer"]]$dependOn(.bstsModelDependencies(options))
+    jaspResults[["bstsMainContainer"]]$dependOn(.bstsModelDependencies())
   }
 
   if(is.null(jaspResults[["bstsMainContainer"]][["bstsModelResults"]])) {
@@ -353,14 +352,14 @@ quantInv <- function(distr, value){
   bstsMainContainer <- createJaspContainer()
   jaspResults[["bstsMainContainer"]] <- bstsMainContainer
 
-  jaspResults[["bstsMainContainer"]]$dependOn(.bstsModelDependencies(options))
+  jaspResults[["bstsMainContainer"]]$dependOn(.bstsModelDependencies())
 
   return()
 }
 
 
 .bstsCreateModelSummaryTable <- function(jaspResults,options,ready){
-  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsModelSummaryTable"]])|!ready) return()
+  if(!is.null(jaspResults[["bstsMainContainer"]][["bstsModelSummaryTable"]])||!ready) return()
 
   #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
@@ -375,9 +374,10 @@ quantInv <- function(distr, value){
   bstsTable$addColumnInfo(name="relGof",  title=gettext("Harvey's goodness of fit"),  type= "number")
 
   if (bstsResults$niter < options$mcmcDraws)
-    bstsTable$addFootnote(message=paste0("Only ",bstsResults$niter," draws where sampled out of the desired ",options$mcmcDraws,". Additionally ",options$burn, " MCMC draws out of ", bstsResults$niter, " are discarded as burn in."))
+    bstsTable$addFootnote(message=gettextf("Test: Only %1$s draws were sampled out of the desired %2$s. Additionally, %3$s MCMC draws out of %1$s are discarded as burn in.", bstsResults$niter, options$mcmcDraws, options$burn))
     else
         bstsTable$addFootnote(message=paste0(options$burn, " MCMC draws out of ", bstsResults$niter, " are discarded as burn in."))
+
 
   .bstsFillModelSummaryTable(bstsTable,bstsResults,ready)
 
@@ -448,7 +448,7 @@ quantInv <- function(distr, value){
   ci <- options$posteriorSummaryCoefCredibleIntervalValue
   res$lo_ci <- apply(bstsResults$coefficients, 2,condQuantile,((1- ci)/2))
   res$hi_ci <- apply(bstsResults$coefficients, 2,condQuantile,1-((1- ci)/2))
-  res <- res[order(res$inc.prob,decreasing = T),]
+  res <- res[order(res$inc.prob,decreasing = TRUE),]
 
 
   for (i in 1:nrow(res)) {
@@ -487,7 +487,7 @@ quantInv <- function(distr, value){
   bstsStatePlots <- createJaspContainer(title = gettext("State Plots"))
 
 
-  bstsStatePlots$dependOn(.bstsStatePlotDependencies(options))
+  bstsStatePlots$dependOn(.bstsStatePlotDependencies())
 
   #bstsResults <- jaspResults[["stateBstsResults"]]$object
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
@@ -628,7 +628,7 @@ quantInv <- function(distr, value){
 
   bstsControlPlots <- createJaspContainer(title = gettext("Control Plots"))
 
-  bstsControlPlots$dependOn(.bstsControlDependencies(options))
+  bstsControlPlots$dependOn(.bstsControlDependencies())
   bstsResults <- jaspResults[["bstsMainContainer"]][["bstsModelResults"]]$object
 
 
